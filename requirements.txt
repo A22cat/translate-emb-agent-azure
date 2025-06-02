@@ -1,0 +1,12 @@
+streamlit
+langchain
+langchain-openai
+langchain-core
+langchain-community # Langchainのバージョンによっては不要な場合もあるが念のため
+azure-ai-vision-imageanalysis
+azure-ai-translation-text
+azure-cosmos
+azure-storage-blob
+Pillow
+python-dotenv
+opencv-python-headless # Pillowで(特定の)フォントや画像形式を扱う際に必要になることがある
