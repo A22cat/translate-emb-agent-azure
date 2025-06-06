@@ -229,6 +229,15 @@ if st.session_state.search_history_results:
 
             with res_col2:
                 if db_item.get('processedImageUrl'):
+                    st.write("")
+                    st.write("")
+                    st.write("")
+                    st.write("")
+                    st.write("")
+                    st.write("")
+                    st.write("")
+                    st.write("")
+                    st.write("")
                     st.image(db_item['processedImageUrl'], caption="加工済み画像 (ストレージより)", use_container_width=True)
                 else:
                     st.write("この履歴には加工済み画像はありません。")
