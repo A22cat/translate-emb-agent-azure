@@ -43,48 +43,96 @@ def save_translation_to_cosmos(container, item: dict):
         print(f"Error saving item id '{item.get('id')}' to Cosmos DB: {e}")
         raise
 
-def vector_search_cosmos(container, embeddings_service: AzureOpenAIEmbeddings, query_text_for_embedding: str, top_k: int = 3) -> list:
-    #デフォルト値 3,呼び出し側でtop_k が指定されなかったら 3 を使う。
-    #関数を呼び出す際にその引数に値を渡すと、デフォルト値ではなく渡された値が使用される(main_trans_azure.pyでの呼び出し側のtop_k)
-    """Cosmos DBでベクトル検索を実行する。"""
-    if not query_text_for_embedding:
-        return []
-        
-    try:
-        query_embedding = embeddings_service.embed_query(query_text_for_embedding)
-        
-        # VectorDistance関数の利用には、Cosmos DBアカウントでベクトル検索機能が有効になっている必要がある。
-        # また、コンテナのインデックスポリシーにベクトルインデックスが正しく定義されている必要がある。
-        # 例: {"vectorIndexes": [{"path": "/embedding", "type": "quantizedFlat"}]}
-        # (dimensionsは使用するEmbeddingモデルに合わせる。例: text-embedding-ada-002なら1536)
-        
-        # TOP @top_k をクエリに追加
-        query = (
-            f"SELECT TOP @top_k c.id, c.originalImageName, c.originalImageUrl, c.processedImageUrl, "
-            f"c.originalText, c.translatedText, c.createdAt, VectorDistance(c.embedding, @query_vector) AS similarityScore "
-            f"FROM c "
-            f"ORDER BY VectorDistance(c.embedding, @query_vector) " # 昇順 (距離が小さいほど類似)
-        )
+# 検索関数
+def search_histories_cosmos(
+    container,
+    embeddings_service: AzureOpenAIEmbeddings,
+    query_text: str,
+    search_mode: str = 'hybrid',
+    top_k: int = 5
+) -> list:
+    """
+    Cosmos DBで履歴を検索する。モードに応じてベクトル検索、全文検索、ハイブリッド検索を切り替える。
+    Args:
+        container: Cosmos DBのコンテナーオブジェクト。
+        embeddings_service: Azure OpenAIの埋め込みサービス。
+        query_text (str): ユーザーからの検索クエリ。
+        search_mode (str): 'vector', 'fulltext', または 'hybrid'。
+        top_k (int): 取得する最大件数。
+    Returns:
+        list: 検索結果のドキュメントリスト。
+    """
+    if not query_text: return []
+    
+    results = []
+    
+    # --- ベクトル検索の実行 ---
+    if search_mode in ['vector', 'hybrid']:
+        try:
+            query_embedding = embeddings_service.embed_query(query_text)
+            # VectorDistanceのORDER BY句から 'ASC' を削除
+            # VectorDistanceはデフォルトで昇順（距離が近い順）にソートするため、ASC/DESCの指定は不要
+            vector_query = (
+                f"SELECT TOP @top_k c.id, c.originalImageName, c.originalImageUrl, c.processedImageUrl, "
+                f"c.originalText, c.translatedText, c.createdAt, VectorDistance(c.embedding, @query_vector) AS similarityScore "
+                f"FROM c "
+                f"WHERE IS_DEFINED(c.embedding) AND IS_ARRAY(c.embedding) "
+                f"ORDER BY VectorDistance(c.embedding, @query_vector)"
+            )
+            print(f"Executing Vector Search with top_k={top_k}...")
+            vector_results = list(container.query_items(
+                query=vector_query,
+                parameters=[
+                    {"name": "@query_vector", "value": query_embedding},
+                    {"name": "@top_k", "value": top_k}
+                ],
+                enable_cross_partition_query=True
+            ))
+            results.extend(vector_results)
+            print(f"Vector search found {len(vector_results)} results.")
+        except Exception as e:
+            print(f"Error during vector search: {e}")
+            if search_mode == 'vector': raise # ベクトル検索のみの場合はエラーを再スロー
 
-        results = list(container.query_items(
-            query=query,
-            parameters=[
-                {"name": "@query_vector", "value": query_embedding},
-                {"name": "@top_k", "value": top_k} # top_kをパラメータとして渡すことを追加して、実際の件数を指定
-            ],
-            enable_cross_partition_query=True # パーティションキーが "/id" の場合は実質不要だが念のため
-        ))
-        
-        # Cosmos DBのクエリでTOP句が有効な場合、クライアント側でのソートやスライスは不要になることが多い。
-        # ORDER BYで既にソートされているため、そのまま返す。
-        print(f"Vector search found {len(results)} results for query (TOP {top_k}).")
-        return results
+    # --- 全文検索の実行 ---
+    if search_mode in ['fulltext', 'hybrid']:
+        try:
+            # 全文検索用のクエリ。CONTAINS関数で日本語テキストを検索。
+            # 大文字小文字を区別しないようにLOWER関数を使うとより良い。
+            fulltext_query = (
+                f"SELECT TOP @top_k c.id, c.originalImageName, c.originalImageUrl, c.processedImageUrl, "
+                f"c.originalText, c.translatedText, c.createdAt "
+                f"FROM c "
+                f"WHERE CONTAINS(c.translatedText, @query_text, true)" # 3番目の引数 true で大文字小文字を無視
+            )
+            print(f"Executing Full-text Search with query_text='{query_text}'...")
+            fulltext_results = list(container.query_items(
+                query=fulltext_query,
+                parameters=[
+                    {"name": "@query_text", "value": query_text},
+                    {"name": "@top_k", "value": top_k}
+                ],
+                enable_cross_partition_query=True
+            ))
+            results.extend(fulltext_results)
+            print(f"Full-text search found {len(fulltext_results)} results.")
+        except Exception as e:
+            print(f"Error during full-text search: {e}")
+            if search_mode == 'fulltext': raise # 全文検索のみの場合はエラーを再スロー
 
-    except Exception as e:
-        # CosmosHttpResponseErrorだけでなく、一般的な例外もキャッチ
-        print(f"Error during vector search in Cosmos DB: {e}")
-        # エラー時は空リストを返す
-        return []
+    # --- 結果のマージと重複排除 (ハイブリッド検索の場合) ---
+    if search_mode == 'hybrid':
+        final_results = []
+        seen_ids = set()
+        for item in results:
+            if item['id'] not in seen_ids:
+                final_results.append(item)
+                seen_ids.add(item['id'])
+        # ハイブリッド検索では、ベクトル検索の結果が先にリストに追加されるため、意味的に近いものが優先される
+        print(f"Hybrid search merged to {len(final_results)} unique results.")
+        return final_results[:top_k] # 最終的にtop_k件に絞る
+
+    return results
 
 # --- Blob Storage Functions ---
 
