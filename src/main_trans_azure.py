@@ -83,6 +83,16 @@ if not st.session_state.clients_initialized_successfully:
     st.error(f"アプリケーションの起動に必要なサービスの初期化に失敗しました。詳細はログを確認してください。エラー: {st.session_state.error_message}")
     st.stop() # 初期化失敗時はアプリを停止
 
+
+# --- コールバック関数を定義 ---
+def clear_search_results_on_change():
+    """
+    検索条件（キーワードやモード）が変更されたときに呼び出され、
+    表示されている検索結果をクリアするための関数。
+    """
+    st.session_state.search_history_results = []
+    # print("DEBUG: Search results cleared due to a change in search criteria.") # デバッグ用
+
 # --- Streamlit UIレイアウト ---
 st.title("🌐 TransEmbPic - 翻訳埋込エージェント")
 st.caption("画像から外国語を抽出し、母国語に翻訳・埋め込み・保存するWebアプリ (Azure AI活用)")
@@ -128,13 +138,20 @@ st.divider()
 
 # --- 翻訳履歴検索セクション ---
 st.header("4. 翻訳履歴の高度な検索")
-search_query_text = st.text_input("検索キーワード (日本語):")
+search_query_text = st.text_input(
+    "検索キーワード (日本語):",
+    key="search_query_input_key",
+    # キーワードが変更されたときも結果をクリアする
+    on_change=clear_search_results_on_change
+)
 
 # 検索モードを選択するUIを追加
 search_mode = st.radio(
     "検索モードを選択してください:",
     ('ハイブリッド検索 (推奨)', 'ベクトル検索 (意味で探す)', '全文検索 (キーワード)'),
-    horizontal=True
+    horizontal=True,
+    key="search_mode_radio_key", # ウィジェットの状態を管理するためのキー
+    on_change=clear_search_results_on_change # モード変更時にコールバックを呼び出す
 )
 
 # --- セッションステートに検索モードごとのフラグを追加 ---
@@ -142,24 +159,31 @@ if "search_executed_modes" not in st.session_state:
     st.session_state.search_executed_modes = set()
 
 if st.button("🔍 履歴を検索"):
+    # ボタンが押されたので、最新の入力値で検索を実行
+    search_query_text = st.session_state.get("search_query_input_key", "")
+    current_mode_display = st.session_state.get("search_mode_radio_key", 'ハイブリッド検索 (推奨)')
+
     if search_query_text:
         mode_map = {
             'ハイブリッド検索 (推奨)': 'hybrid',
             'ベクトル検索 (意味で探す)': 'vector',
             '全文検索 (キーワード)': 'fulltext'
         }
-        selected_mode = mode_map[search_mode]
+        selected_mode_internal = mode_map[current_mode_display]
+        #selected_mode = mode_map[search_mode]
 
-        with st.spinner(f"{search_mode}を実行中..."):
+        #with st.spinner(f"{search_mode}を実行中..."):
+        with st.spinner(f"{current_mode_display}を実行中..."):
             try:
+                # search_histories_cosmos関数を呼び出して結果を取得
                 st.session_state.search_history_results = search_histories_cosmos(
                     initialized_clients["cosmos_container"],
                     initialized_clients["embeddings"],
                     search_query_text,
-                    search_mode=selected_mode,
+                    search_mode=selected_mode_internal,
                     top_k=5 
                 )
-                st.session_state.search_executed_modes.add(selected_mode)  # 検索実行フラグを記録
+                st.session_state.search_executed_modes.add(selected_mode_internal)  # 検索実行フラグを記録
                 if not st.session_state.search_history_results:
                     st.info("検索キーワードに一致する翻訳履歴は見つかりませんでした。")
             except Exception as e:
@@ -177,9 +201,15 @@ mode_map = {
 }
 
 # 検索結果の表示
-selected_mode = mode_map[search_mode]
-if selected_mode in st.session_state.search_executed_modes and st.session_state.search_history_results:
-    st.subheader(f"検索結果: {len(st.session_state.search_history_results)} 件 ({search_mode})")
+#selected_mode_internal = mode_map[current_mode_display]
+#selected_mode = mode_map[search_mode]
+# st.session_state.search_history_results が存在し、かつ内容が空でない場合にのみ表示
+if st.session_state.get("search_history_results"):
+    # ラジオボタンの現在の選択値を表示モードとして使用
+    current_mode_display = st.session_state.get("search_mode_radio_key", 'ハイブリッド検索 (推奨)')
+    st.subheader(f"検索結果: {len(st.session_state.search_history_results)} 件 ({current_mode_display})")
+#if selected_mode_internal in st.session_state.search_executed_modes and st.session_state.search_history_results:
+#    st.subheader(f"検索結果: {len(st.session_state.search_history_results)} 件 ({current_mode_display})")
     for db_item in st.session_state.search_history_results:
         # 日付フォーマットを調整 (例: '2023-10-27T10:30:00.123456Z' -> '2023-10-27 10:30')
         # 類似度スコアの表示準備 (Unknown format code 'f' for object of type 'str'のエラー修正箇所)
