@@ -137,6 +137,10 @@ search_mode = st.radio(
     horizontal=True
 )
 
+# --- セッションステートに検索モードごとのフラグを追加 ---
+if "search_executed_modes" not in st.session_state:
+    st.session_state.search_executed_modes = set()
+
 if st.button("🔍 履歴を検索"):
     if search_query_text:
         mode_map = {
@@ -145,10 +149,9 @@ if st.button("🔍 履歴を検索"):
             '全文検索 (キーワード)': 'fulltext'
         }
         selected_mode = mode_map[search_mode]
-        
+
         with st.spinner(f"{search_mode}を実行中..."):
             try:
-                # 新しいサービス関数を呼び出す
                 st.session_state.search_history_results = search_histories_cosmos(
                     initialized_clients["cosmos_container"],
                     initialized_clients["embeddings"],
@@ -156,6 +159,7 @@ if st.button("🔍 履歴を検索"):
                     search_mode=selected_mode,
                     top_k=5 
                 )
+                st.session_state.search_executed_modes.add(selected_mode)  # 検索実行フラグを記録
                 if not st.session_state.search_history_results:
                     st.info("検索キーワードに一致する翻訳履歴は見つかりませんでした。")
             except Exception as e:
@@ -163,9 +167,18 @@ if st.button("🔍 履歴を検索"):
                 st.session_state.search_history_results = []
     else:
         st.warning("検索キーワードを入力してください。")
+        st.session_state.search_history_results = []
+
+# --- 検索結果を表示する前に、現在の検索モードが一度でも検索されたか確認 ---
+mode_map = {
+    'ハイブリッド検索 (推奨)': 'hybrid',
+    'ベクトル検索 (意味で探す)': 'vector',
+    '全文検索 (キーワード)': 'fulltext'
+}
 
 # 検索結果の表示
-if st.session_state.search_history_results:
+selected_mode = mode_map[search_mode]
+if selected_mode in st.session_state.search_executed_modes and st.session_state.search_history_results:
     st.subheader(f"検索結果: {len(st.session_state.search_history_results)} 件 ({search_mode})")
     for db_item in st.session_state.search_history_results:
         # 日付フォーマットを調整 (例: '2023-10-27T10:30:00.123456Z' -> '2023-10-27 10:30')
@@ -181,6 +194,7 @@ if st.session_state.search_history_results:
                 # パース失敗時は元の文字列を使用。デバッグ用にエラー内容をコンソールに出力しても良い
                 # print(f"DEBUG: Failed to parse date string '{db_item.get('createdAt')}': {e_date}")
                 pass 
+
 
         similarity_score_value = db_item.get('similarityScore')
         #  全文検索の場合、similarityScoreは存在しないため考慮
