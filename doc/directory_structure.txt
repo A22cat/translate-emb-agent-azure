@@ -1,0 +1,26 @@
+TranslateEmbAgent ディレクトリ構成
+-----------------------------------------------------------------
+translate-emb-agent-azure/
+├── src/                            # アプリケーションのソースコード
+│   ├── main_trans_azure.py        # Streamlit アプリ（UI含む）main.pyとして実行するファイル
+│   ├── agents/                    # Langchainエージェント関連のモジュール
+│   │   ├── __init__.py
+│   │   └── image_processing_agent.py # OCR、翻訳、埋込・保存のロジックをまとめたエージェント/チェーン
+│   ├── services/                  # Azureサービス連携関連のモジュール
+│   │   ├── __init__.py
+│   │   ├── azure_ai_services.py  # Computer Vision, Translator, OpenAI (Embeddings)
+│   │   └── database_services.py  # Cosmos DB, Blob Storage
+│   └── utils/                     # ユーティリティ関数 (画像処理など)
+│       ├── __init__.py
+│       └── image_utils.py
+├── doc/                            # ドキュメント関連
+│   ├── architecture_diagram.pdf   # システム構成図（画像 or pdf）
+│   ├── directory_structure.txt    # ディレクトリ構成
+│   ├── setup_guide.md             # セットアップ手順（デプロイ手順含む）
+│   ├── summary.md                 # 要約
+│   └── task_description.md        # タスクの説明
+├── .env                            # 環境変数ファイル (ローカル開発用、各自で作成)
+├── .env.example                    # 環境変数テンプレート
+├── requirements.txt                # Python 依存パッケージ
+└── README.md                       # プロジェクトの概要・実行方法など
+-----------------------------------------------------------------
