@@ -4,7 +4,7 @@
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.33-ff69b4.svg)](https://streamlit.io/)
 [![Azure](https://img.shields.io/badge/Azure-Services-blue.svg)](https://azure.microsoft.com/)
 
-画像から外国語（英語）を抽出し、母国語（日本語）に翻訳・埋め込み・保存するWebアプリケーションです。
+画像から外国語（英語）を抽出し、母国語（日本語）に翻訳・埋め込み・保存まで自動でできるWebアプリケーションです。
 AzureのAIサービス（Azure AI Vision, Azure AI Translator, Azure OpenAI Embeddings, Azure Cosmos DB, Azure Blob Storageを使用し、Langchainを活用して処理を連携させています。
 
 ## ✨ 主な機能
@@ -39,7 +39,7 @@ AzureのAIサービス（Azure AI Vision, Azure AI Translator, Azure OpenAI Embe
 
 
 ## ▶️ デモ動画URL
-デモ動画URL：
+デモ動画URL：  
 https://www.youtube.com/watch?v=WQckMI934N0
 
-本動画は、翻訳埋込エージェントの4分間デモ動画でございます。
+本動画は、翻訳埋込エージェントの4分間デモ動画です。
