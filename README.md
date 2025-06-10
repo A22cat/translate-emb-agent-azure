@@ -5,7 +5,7 @@
 [![Azure](https://img.shields.io/badge/Azure-Services-blue.svg)](https://azure.microsoft.com/)
 
 画像から外国語（英語）を抽出し、母国語（日本語）に翻訳・埋め込み・保存まで自動でできるWebアプリケーションです。
-AzureのAIサービス（Azure AI Vision, Azure AI Translator, Azure OpenAI Embeddings, Azure Cosmos DB, Azure Blob Storageを使用し、Langchainを活用して処理を連携させています。
+AzureのAIサービス（Azure Computer Vision, Azure AI Translator, Azure OpenAI Embeddings, Azure Cosmos DB, Azure Blob Storage）を使用し、Langchainを活用して処理を連携させています。
 
 ## ✨ 主な機能
 
@@ -17,7 +17,7 @@ AzureのAIサービス（Azure AI Vision, Azure AI Translator, Azure OpenAI Embe
 
 ## 🚀 技術構成 [Tech Stack]
 - Azure Computer Vision (OCR API)
-- Azure Translator (Text API)
+- Azure AI Translator (Text API)
 - Azure OpenAI (Embedding API)
 - Azure Cosmos DB (JSONドキュメント + ベクトルインデックス)
 - Azure Blob Storage
