@@ -14,11 +14,15 @@ translate-emb-agent-azure/
 │       ├── __init__.py
 │       └── image_utils.py
 ├── doc/                            # ドキュメント関連
-│   ├── architecture_diagram.pdf   # システム構成図（画像 or pdf）
+│   ├── architecture_diagram.pdf   # システム構成図（pdf）
 │   ├── directory_structure.txt    # ディレクトリ構成
+│   ├── features.md                # Azureサービスの使用方法やデモ動画と連携した機能のまとめ
+│   ├── pitch_video.md             # デモ動画の内容をまとめたもの
 │   ├── setup_guide.md             # セットアップ手順（デプロイ手順含む）
 │   ├── summary.md                 # 要約
-│   └── task_description.md        # タスクの説明
+│   ├── task_description.md        # タスクの説明
+│   └── sample_images/             # 翻訳する前の元画像サンプル
+│       └── app_behavior_notes.md  # ハイブリッド検索、ベクトル検索、全文検索の結果比較
 ├── .env                            # 環境変数ファイル (ローカル開発用、各自で作成)
 ├── .env.example                    # 環境変数テンプレート
 ├── requirements.txt                # Python 依存パッケージ

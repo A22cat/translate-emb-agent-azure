@@ -1,16 +1,15 @@
-# Azure AIエージェント、Azure OpenAI、Azure Cosmos DBを活用したエージェンティックアプリの構築
+# テーマ：Azure AIエージェント、Azure OpenAI、Azure Cosmos DBを活用したエージェンティックアプリの構築
 
-## 1. アプリ概要
+## 1. ソリューション概要
 
 - **タイトル**：TranslateEmbAgent（翻訳埋込エージェント）
 - **プロダクト名**：TransEmbPic（トランスエンブピック）  
-  → Translate + Embed + Picture の造語。
+  → Translate + Embed + Picture の略語。
 
 **概要**  
 画像から外国語を抽出し、母国語に翻訳・埋め込み・保存するWebアプリ。  
-翻訳とベクトル埋め込みを組み合わせた新しい知識活用体験を提供するエージェント型アプリです。本アプリは、画像から外国語（英語）テキストを抽出し、母国語（日本語）に翻訳します。そして、画像に翻訳文（日本語訳）を挿入し保存まで自動で実施するWebアプリです。AzureのAIサービスを活用することで、高精度かつ実用的な画像検索と翻訳体験を提供します。
+翻訳とベクトル埋め込みを組み合わせた新しい知識活用体験を提供するエージェント型アプリです。本アプリは、画像から外国語（英語）テキストを抽出し、母国語（日本語）に翻訳します。そして、画像に翻訳文（日本語訳）を挿入して保存できるWebアプリです。AzureのAIサービスを活用することで、高精度かつ実用的な画像翻訳体験を提供します
 
----
 
 ## 2. 解決する課題と利用シーン
 
@@ -22,7 +21,6 @@
 - 多言語業務現場：外国語案内文の理解や情報共有
 - 翻訳業務：絵本や漫画といったクリエイティブコンテンツの翻訳支援
 
----
 
 ## 3. 主な機能
 
@@ -31,37 +29,35 @@
 3. 翻訳文を画像に埋め込み、加工済み画像を自動保存しダウンロード
 4. 過去の翻訳履歴検索（ベクトル検索、ベクトル検索(意味で探す)、全文検索(キーワード)の検索モード）
 
----
+
 
 ## 4. 技術構成（Tech Stack）
 
-- LangChain
-- Azure Computer Vision (OCR API)
-- Azure Translator (Text API)
-- Azure OpenAI (Embeddingモデル)
-- Azure Cosmos DB (JSONドキュメント + ベクトルインデックス)
-- Azure Blob Storage (元画像と加工済み画像保存)
-- Azure App Service
-- Python
-- Streamlit (UI)
-- Pillow (Pythonライブラリ)
+| カテゴリ         | 使用技術 / サービス                                                                        |
+|------------------|-----------------------------------------------------------------------------------------|
+| 開発言語 / UI    | Python / Streamlit                                                                       |
+| エージェント構成 | Langchain                                                                                |
+| AIモデル         | Azure OpenAI (Embeddingモデル)                                                           |
+| OCR(文字抽出)    | Azure Computer Vision                                                                    |
+| 翻訳             | Azure Translator                                                                         |
+| データベース     | Azure Cosmos DB (ベクトルストア + JSONドキュメント)                                         |
+| 画像保存         | Azure Blob Storage (元画像と加工済み画像保存)                                              |
+| ベクトル検索     | Azure OpenAI Embedding + Cosmos DB ベクトルインデックス                                    |
+| 画像合成         | Pillow (Pythonライブラリ)                                                                 |
+|
 
----
 
 ## 5. エージェント構成（Langchain）
 
 エージェント構成と役割
 
-    | エージェント名         | 役割                                                                                                                                          |
-    |------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-    | OCRエージェント        | 画像から英語テキストを抽出（Azure Computer Vision OCR API）                                                                                 |
-    | 翻訳エージェント       | 抽出された英語を日本語に翻訳（Azure Translator Text API）                                                                                   |
-    | 埋込・保存エージェント | ・翻訳結果を画像に合成（Pillow）し、Azure Blob Storageに保存  
-                             ・翻訳文とメタ情報をCosmos DBへ保存  
+    | エージェント名         | 役割                                                                                         |
+    |------------------------|--------------------------------------------------------------------------------------------|
+    | OCRエージェント        | 画像から英語テキストを抽出（Azure Computer Vision OCR API）                                    |
+    | 翻訳エージェント       | 抽出された英語を日本語に翻訳（Azure Translator Text API）                                       |
+    | 埋込・保存エージェント | ・翻訳結果を画像に合成（Pillow）し、Azure Blob Storageに保存                                     |
+                             ・翻訳文とメタ情報をCosmos DBへ保存                                                             |
                              ・埋込用ベクトルを生成し、類似検索に対応（Azure OpenAI Embedding + Cosmos DB ベクトルインデックス） |
-
-
----
 
 ## 6. 拡張構想
 
@@ -73,7 +69,11 @@
 - 音声関連機能は Azure Speech Services で統一的に実装可能（TTSとSTTを両立）
 - 会話型UI：Chat風インターフェース導入（Streamlit Chat UI等）
 
----
+
+## 6. システム構成
+
+architecture_diagram.pdf
+
 
 ## 7. GitHubリポジトリのURL
 
@@ -82,3 +82,4 @@
 
 - 本課題実装のリポジトリ：  
   https://github.com/A22cat/translate-emb-agent-azure
+
